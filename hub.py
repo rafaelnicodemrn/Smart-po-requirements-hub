@@ -57,7 +57,7 @@ def rotina_mensal():
     for epic in epicos:
         epic_key = epic.get("key")
         epic_summary = epic.get('fields', {}).get('summary')
-        filhos_pendentes = executar_busca_jql(f'"Epic Link" = {epic_key} AND statusCategory != Done', max_results=1)
+        filhos_pendentes = executar_busca_jql(f'parent = {epic_key} AND statusCategory != Done', max_results=1)
         if not filhos_pendentes:
             print(f" ⚠ ALERTA: O Épico [{epic_key}] '{epic_summary}' não possui pendências. Pode ser fechado!")
             
