@@ -1,7 +1,7 @@
 # core/jira_fields.py
 from core.models import Demanda, ROTEAMENTO_JIRA
 from core.adf import construir_descricao_adf
-from config import PROJETO_KEY, RELATOR_ACCOUNT_ID
+from config import PROJETO_KEY
 
 # IDs Reais Descobertos no seu Jira
 CAMPOS = {
@@ -22,9 +22,12 @@ def montar_payload(demanda: Demanda) -> dict:
         "summary": demanda.resumo[:70],  # Garante o limite de 70 caracteres
         "issuetype": {"name": rota["issuetype"]},
         "description": construir_descricao_adf(demanda),
-        "reporter": {"id": RELATOR_ACCOUNT_ID}, # Exigência GDPR da Atlassian (accountId)
-        "priority": {"name": demanda.prioridade},
-        "labels": rota["labels"]
+        # Campo 'reporter' omitido propositalmente: a API do Jira Cloud usa
+        # automaticamente o accountId do usuário autenticado, evitando o erro
+        # "Especifique algum valor válido para reporter".
+        "priority": {"name": demanda.prioridade}
+        # Campo de Categoria/Labels omitido propositalmente: não deve ser
+        # preenchido automaticamente, ficando vazio/padrão no Jira Cloud.
     }
 
     # 1. Tratamento de Área de Negócios (Campo do tipo Select/Lista)
@@ -38,5 +41,17 @@ def montar_payload(demanda: Demanda) -> dict:
     # 3. Tratamento de Vínculo com Épico Pai (Usando 'parent')
     if demanda.pai_key:
         fields["parent"] = {"key": demanda.pai_key}
+
+    # 4. Tratamento de Responsável (assignee), apenas se selecionado
+    if demanda.responsavel_account_id:
+        fields["assignee"] = {"accountId": demanda.responsavel_account_id}
+
+    # 5. Tratamento de Terceiros (campo customizado), apenas se selecionado
+    if demanda.terceiros_field_id and demanda.terceiros_opcao:
+        opcao_id = demanda.terceiros_opcao.get("id")
+        if opcao_id:
+            fields[demanda.terceiros_field_id] = {"id": opcao_id}
+        else:
+            fields[demanda.terceiros_field_id] = {"value": demanda.terceiros_opcao.get("value")}
 
     return {"fields": fields}

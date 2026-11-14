@@ -5,3 +5,9 @@ __pycache__/
 venv/
 .vscode/
 .idea/
+# Segredos e dados locais
+.streamlit/google_credentials.json
+hub_database.db
+hub_database.db-shm
+hub_database.db-wal
+*.db
